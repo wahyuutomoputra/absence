@@ -20,7 +20,7 @@ A simple attendance management system API built with Go and Gin framework.
 
 1. Clone the repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/wahyuutomoputra/absence
 cd absence
 ```
 

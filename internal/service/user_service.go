@@ -1,10 +1,11 @@
 package service
 
 import (
-	"absence/internal/model"
-	"absence/internal/repository"
 	"context"
 	"errors"
+
+	"absence/internal/model"
+	"absence/internal/repository"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -17,52 +18,50 @@ type UserService interface {
 	Delete(ctx context.Context, id uint) error
 }
 
-type userService struct {
+type UserServiceImpl struct {
 	userRepo repository.UserRepository
 }
 
 func NewUserService(userRepo repository.UserRepository) UserService {
-	return &userService{userRepo: userRepo}
+	return &UserServiceImpl{
+		userRepo: userRepo,
+	}
 }
 
-func (s *userService) Register(ctx context.Context, user *model.User) error {
+func (s *UserServiceImpl) Register(ctx context.Context, user *model.User) error {
+	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 	user.Password = string(hashedPassword)
+
 	return s.userRepo.Create(ctx, user)
 }
 
-func (s *userService) Login(ctx context.Context, username, password string) (*model.User, error) {
+func (s *UserServiceImpl) Login(ctx context.Context, username, password string) (*model.User, error) {
 	user, err := s.userRepo.GetByUsername(ctx, username)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("invalid credentials")
 	}
 
+	// Compare passwords
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return nil, errors.New("invalid password")
+		return nil, errors.New("invalid credentials")
 	}
 
 	return user, nil
 }
 
-func (s *userService) GetByID(ctx context.Context, id uint) (*model.User, error) {
+func (s *UserServiceImpl) GetByID(ctx context.Context, id uint) (*model.User, error) {
 	return s.userRepo.GetByID(ctx, id)
 }
 
-func (s *userService) Update(ctx context.Context, user *model.User) error {
-	if user.Password != "" {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-		if err != nil {
-			return err
-		}
-		user.Password = string(hashedPassword)
-	}
+func (s *UserServiceImpl) Update(ctx context.Context, user *model.User) error {
 	return s.userRepo.Update(ctx, user)
 }
 
-func (s *userService) Delete(ctx context.Context, id uint) error {
+func (s *UserServiceImpl) Delete(ctx context.Context, id uint) error {
 	return s.userRepo.Delete(ctx, id)
 }

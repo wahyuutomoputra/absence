@@ -211,7 +211,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.LoginRequest"
+                            "$ref": "#/definitions/request.LoginRequest"
                         }
                     }
                 ],
@@ -269,7 +269,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.RegisterRequest"
+                            "$ref": "#/definitions/request.RegisterRequest"
                         }
                     }
                 ],
@@ -398,7 +398,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.UpdateUserRequest"
+                            "$ref": "#/definitions/request.UpdateUserRequest"
                         }
                     }
                 ],
@@ -607,7 +607,34 @@ const docTemplate = `{
                 }
             }
         },
-        "model.LoginRequest": {
+        "model.User": {
+            "description": "User model",
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "request.LoginRequest": {
             "description": "Login request",
             "type": "object",
             "required": [
@@ -625,7 +652,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.RegisterRequest": {
+        "request.RegisterRequest": {
             "description": "User registration request",
             "type": "object",
             "required": [
@@ -662,7 +689,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.UpdateUserRequest": {
+        "request.UpdateUserRequest": {
             "description": "User update request",
             "type": "object",
             "required": [
@@ -691,32 +718,6 @@ const docTemplate = `{
                 "username": {
                     "type": "string",
                     "example": "john_doe"
-                }
-            }
-        },
-        "model.User": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "full_name": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "role": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
                 }
             }
         },

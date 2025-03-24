@@ -2,7 +2,9 @@ package handler
 
 import (
 	"absence/internal/model"
+	"absence/internal/model/request"
 	"absence/internal/service"
+	"absence/pkg/jwt"
 	"absence/pkg/response"
 	"net/http"
 	"strconv"
@@ -12,10 +14,14 @@ import (
 
 type UserHandler struct {
 	userService service.UserService
+	jwtManager  *jwt.JWTManager
 }
 
-func NewUserHandler(userService service.UserService) *UserHandler {
-	return &UserHandler{userService: userService}
+func NewUserHandler(userService service.UserService, jwtManager *jwt.JWTManager) *UserHandler {
+	return &UserHandler{
+		userService: userService,
+		jwtManager:  jwtManager,
+	}
 }
 
 // Register godoc
@@ -24,7 +30,7 @@ func NewUserHandler(userService service.UserService) *UserHandler {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param user body model.RegisterRequest true "User registration details"
+// @Param user body request.RegisterRequest true "User registration details"
 // @Success 201 {object} response.Response{data=model.User} "User registered successfully"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 500 {object} response.Response "Server error"
@@ -39,7 +45,7 @@ func NewUserHandler(userService service.UserService) *UserHandler {
 //	  "role": "employee"
 //	}
 func (h *UserHandler) Register(c *gin.Context) {
-	var req model.RegisterRequest
+	var req request.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
@@ -67,13 +73,13 @@ func (h *UserHandler) Register(c *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param user body model.LoginRequest true "Login credentials"
-// @Success 200 {object} response.Response{data=model.User} "Login successful"
+// @Param user body request.LoginRequest true "Login credentials"
+// @Success 200 {object} response.Response{data=map[string]interface{}} "Login successful"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 401 {object} response.Response "Invalid credentials"
 // @Router /login [post]
 func (h *UserHandler) Login(c *gin.Context) {
-	var req model.LoginRequest
+	var req request.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
@@ -85,7 +91,22 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Login successful", user)
+	token, err := h.jwtManager.GenerateToken(user.ID, user.Username, user.Role)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to generate token")
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Login successful", gin.H{
+		"token": token,
+		"user": gin.H{
+			"id":        user.ID,
+			"username":  user.Username,
+			"full_name": user.FullName,
+			"email":     user.Email,
+			"role":      user.Role,
+		},
+	})
 }
 
 // GetUser godoc
@@ -123,7 +144,7 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "User ID"
-// @Param user body model.UpdateUserRequest true "User details"
+// @Param user body request.UpdateUserRequest true "User details"
 // @Success 200 {object} response.Response{data=model.User} "User updated successfully"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 404 {object} response.Response "User not found"
@@ -137,7 +158,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	var req model.UpdateUserRequest
+	var req request.UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return

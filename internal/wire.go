@@ -5,37 +5,34 @@ package internal
 
 import (
 	"absence/internal/handler"
+	"absence/internal/middleware"
 	"absence/internal/repository"
 	"absence/internal/service"
 	"absence/pkg/database"
+	"absence/pkg/jwt"
 
 	"github.com/google/wire"
 	"gorm.io/gorm"
 )
 
-// ProviderSet is a provider set for wire
-var ProviderSet = wire.NewSet(
-	repository.NewUserRepository,
-	repository.NewAttendanceRepository,
-	service.NewUserService,
-	service.NewAttendanceService,
-	handler.NewUserHandler,
-	handler.NewAttendanceHandler,
-)
-
-type API struct {
-	UserHandler       *handler.UserHandler
-	AttendanceHandler *handler.AttendanceHandler
+// InitializeDB initializes the database connection
+func InitializeDB(config *database.Config) (*gorm.DB, error) {
+	return database.NewDatabase(config)
 }
 
-func InitializeAPI(db *gorm.DB) (*API, error) {
+// InitializeAPI initializes all components of the API
+func InitializeAPI(db *gorm.DB, jwtManager *jwt.JWTManager) (*API, error) {
 	wire.Build(
-		ProviderSet,
+		repository.NewUserRepository,
+		service.NewUserService,
+		handler.NewUserHandler,
+		middleware.NewAuthMiddleware,
 		wire.Struct(new(API), "*"),
 	)
 	return nil, nil
 }
 
-func InitializeDB(config *database.Config) (*gorm.DB, error) {
-	return database.NewDatabase(config)
+type API struct {
+	UserHandler    *handler.UserHandler
+	AuthMiddleware *middleware.AuthMiddleware
 }

@@ -24,8 +24,11 @@ func InitializeDB(config *database.Config) (*gorm.DB, error) {
 func InitializeAPI(db *gorm.DB, jwtManager *jwt.JWTManager) (*API, error) {
 	wire.Build(
 		repository.NewUserRepository,
+		repository.NewAttendanceRepository,
 		service.NewUserService,
+		service.NewAttendanceService,
 		handler.NewUserHandler,
+		handler.NewAttendanceHandler,
 		middleware.NewAuthMiddleware,
 		wire.Struct(new(API), "*"),
 	)
@@ -33,6 +36,7 @@ func InitializeAPI(db *gorm.DB, jwtManager *jwt.JWTManager) (*API, error) {
 }
 
 type API struct {
-	UserHandler    *handler.UserHandler
-	AuthMiddleware *middleware.AuthMiddleware
+	UserHandler       *handler.UserHandler
+	AttendanceHandler *handler.AttendanceHandler
+	AuthMiddleware    *middleware.AuthMiddleware
 }

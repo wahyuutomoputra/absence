@@ -93,6 +93,15 @@ func main() {
 			users.GET("/:id", api.UserHandler.GetUser)
 			users.PUT("/:id", api.UserHandler.UpdateUser)
 			users.DELETE("/:id", api.UserHandler.DeleteUser)
+			users.GET("/:id/attendance", api.AttendanceHandler.GetUserAttendances)
+		}
+
+		// Attendance routes
+		attendance := apiGroup.Group("/attendance")
+		{
+			attendance.POST("/check-in", api.AttendanceHandler.CheckIn)
+			attendance.POST("/check-out", api.AttendanceHandler.CheckOut)
+			attendance.GET("/:id", api.AttendanceHandler.GetAttendance)
 		}
 	}
 

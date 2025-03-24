@@ -4,16 +4,20 @@ import (
 	"time"
 )
 
+// Attendance represents the attendance record in the system
 type Attendance struct {
-	ID          uint      `gorm:"primaryKey" json:"id"`
-	UserID      uint      `gorm:"not null" json:"user_id"`
-	User        User      `gorm:"foreignKey:UserID" json:"user"`
-	CheckIn     time.Time `json:"check_in"`
-	CheckOut    time.Time `json:"check_out"`
-	Status      string    `gorm:"size:20;check:status IN ('present', 'late', 'absent', 'leave')" json:"status"`
-	LocationIn  string    `gorm:"type:point" json:"location_in"`
-	LocationOut string    `gorm:"type:point" json:"location_out"`
-	Notes       string    `gorm:"type:text" json:"notes"`
-	CreatedAt   time.Time `gorm:"type:timestamp;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt   time.Time `gorm:"type:timestamp;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" json:"updated_at"`
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	UserID    uint      `json:"user_id" gorm:"not null"`
+	User      User      `json:"user" gorm:"foreignKey:UserID"`
+	CheckIn   time.Time `json:"check_in" gorm:"not null"`
+	CheckOut  time.Time `json:"check_out"`
+	Location  string    `json:"location"`
+	Notes     string    `json:"notes"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// TableName specifies the table name for Attendance
+func (Attendance) TableName() string {
+	return "attendances"
 }

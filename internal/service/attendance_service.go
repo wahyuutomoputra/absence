@@ -33,10 +33,9 @@ func (s *attendanceService) CheckIn(ctx context.Context, userID uint, location s
 	}
 
 	attendance := &model.Attendance{
-		UserID:     userID,
-		CheckIn:    now,
-		LocationIn: location,
-		Status:     "present",
+		UserID:   userID,
+		CheckIn:  now,
+		Location: location,
 	}
 
 	return s.attendanceRepo.Create(ctx, attendance)
@@ -51,7 +50,7 @@ func (s *attendanceService) CheckOut(ctx context.Context, userID uint, location 
 	}
 
 	attendance.CheckOut = now
-	attendance.LocationOut = location
+	attendance.Location = location
 
 	return s.attendanceRepo.Update(ctx, attendance)
 }

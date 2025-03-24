@@ -23,10 +23,14 @@ func InitializeAPI(db *gorm.DB, jwtManager *jwt.JWTManager) (*API, error) {
 	userRepository := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepository)
 	userHandler := handler.NewUserHandler(userService, jwtManager)
+	attendanceRepository := repository.NewAttendanceRepository(db)
+	attendanceService := service.NewAttendanceService(attendanceRepository)
+	attendanceHandler := handler.NewAttendanceHandler(attendanceService)
 	authMiddleware := middleware.NewAuthMiddleware(jwtManager)
 	api := &API{
-		UserHandler:    userHandler,
-		AuthMiddleware: authMiddleware,
+		UserHandler:       userHandler,
+		AttendanceHandler: attendanceHandler,
+		AuthMiddleware:    authMiddleware,
 	}
 	return api, nil
 }
@@ -39,6 +43,7 @@ func InitializeDB(config *database.Config) (*gorm.DB, error) {
 }
 
 type API struct {
-	UserHandler    *handler.UserHandler
-	AuthMiddleware *middleware.AuthMiddleware
+	UserHandler       *handler.UserHandler
+	AttendanceHandler *handler.AttendanceHandler
+	AuthMiddleware    *middleware.AuthMiddleware
 }

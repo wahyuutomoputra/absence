@@ -3,6 +3,7 @@ package handler
 import (
 	"absence/internal/model"
 	"absence/internal/service"
+	"absence/pkg/response"
 	"net/http"
 	"strconv"
 
@@ -23,55 +24,68 @@ func NewUserHandler(userService service.UserService) *UserHandler {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param user body model.User true "User registration details"
-// @Success 201 {object} map[string]string "User registered successfully"
-// @Failure 400 {object} map[string]string "Invalid input"
-// @Failure 500 {object} map[string]string "Server error"
+// @Param user body model.RegisterRequest true "User registration details"
+// @Success 201 {object} response.Response{data=model.User} "User registered successfully"
+// @Failure 400 {object} response.Response "Invalid input"
+// @Failure 500 {object} response.Response "Server error"
 // @Router /register [post]
+// @Example
+//
+//	{
+//	  "username": "john_doe",
+//	  "password": "secure123",
+//	  "full_name": "John Doe",
+//	  "email": "john@example.com",
+//	  "role": "employee"
+//	}
 func (h *UserHandler) Register(c *gin.Context) {
-	var user model.User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var req model.RegisterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := h.userService.Register(c.Request.Context(), &user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	user := &model.User{
+		Username: req.Username,
+		Password: req.Password,
+		FullName: req.FullName,
+		Email:    req.Email,
+		Role:     req.Role,
+	}
+
+	if err := h.userService.Register(c.Request.Context(), user); err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "User registered successfully"})
+	response.Success(c, http.StatusCreated, "User registered successfully", user)
 }
 
 // Login godoc
 // @Summary Login user
-// @Description Authenticate a user and return user details
+// @Description Authenticate user and return token
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param credentials body object{username=string,password=string} true "Login credentials"
-// @Success 200 {object} model.User "User details"
-// @Failure 400 {object} map[string]string "Invalid input"
-// @Failure 401 {object} map[string]string "Invalid credentials"
+// @Param user body model.LoginRequest true "Login credentials"
+// @Success 200 {object} response.Response{data=model.User} "Login successful"
+// @Failure 400 {object} response.Response "Invalid input"
+// @Failure 401 {object} response.Response "Invalid credentials"
 // @Router /login [post]
 func (h *UserHandler) Login(c *gin.Context) {
-	var credentials struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
-
-	if err := c.ShouldBindJSON(&credentials); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var req model.LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	user, err := h.userService.Login(c.Request.Context(), credentials.Username, credentials.Password)
+	user, err := h.userService.Login(c.Request.Context(), req.Username, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		response.Error(c, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	response.Success(c, http.StatusOK, "Login successful", user)
 }
 
 // GetUser godoc
@@ -81,25 +95,25 @@ func (h *UserHandler) Login(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "User ID"
-// @Success 200 {object} model.User "User details"
-// @Failure 400 {object} map[string]string "Invalid user ID"
-// @Failure 404 {object} map[string]string "User not found"
+// @Success 200 {object} response.Response{data=model.User} "User details retrieved successfully"
+// @Failure 400 {object} response.Response "Invalid user ID"
+// @Failure 404 {object} response.Response "User not found"
 // @Security BearerAuth
 // @Router /users/{id} [get]
 func (h *UserHandler) GetUser(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		response.Error(c, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
 	user, err := h.userService.GetByID(c.Request.Context(), uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		response.Error(c, http.StatusNotFound, "User not found")
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	response.Success(c, http.StatusOK, "User details retrieved successfully", user)
 }
 
 // UpdateUser godoc
@@ -109,32 +123,40 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "User ID"
-// @Param user body model.User true "User details to update"
-// @Success 200 {object} map[string]string "User updated successfully"
-// @Failure 400 {object} map[string]string "Invalid input"
-// @Failure 500 {object} map[string]string "Server error"
+// @Param user body model.UpdateUserRequest true "User details"
+// @Success 200 {object} response.Response{data=model.User} "User updated successfully"
+// @Failure 400 {object} response.Response "Invalid input"
+// @Failure 404 {object} response.Response "User not found"
+// @Failure 500 {object} response.Response "Server error"
 // @Security BearerAuth
 // @Router /users/{id} [put]
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		response.Error(c, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
-	var user model.User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var req model.UpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	user.ID = uint(id)
-	if err := h.userService.Update(c.Request.Context(), &user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	user := &model.User{
+		ID:       uint(id),
+		Username: req.Username,
+		FullName: req.FullName,
+		Email:    req.Email,
+		Role:     req.Role,
+	}
+
+	if err := h.userService.Update(c.Request.Context(), user); err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
+	response.Success(c, http.StatusOK, "User updated successfully", user)
 }
 
 // DeleteUser godoc
@@ -144,22 +166,23 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "User ID"
-// @Success 200 {object} map[string]string "User deleted successfully"
-// @Failure 400 {object} map[string]string "Invalid user ID"
-// @Failure 500 {object} map[string]string "Server error"
+// @Success 200 {object} response.Response "User deleted successfully"
+// @Failure 400 {object} response.Response "Invalid user ID"
+// @Failure 404 {object} response.Response "User not found"
+// @Failure 500 {object} response.Response "Server error"
 // @Security BearerAuth
 // @Router /users/{id} [delete]
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		response.Error(c, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
 	if err := h.userService.Delete(c.Request.Context(), uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.Error(c, http.StatusNotFound, "User not found")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+	response.Success(c, http.StatusOK, "User deleted successfully", nil)
 }

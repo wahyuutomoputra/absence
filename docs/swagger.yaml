@@ -25,6 +25,71 @@ definitions:
       user_id:
         type: integer
     type: object
+  model.LoginRequest:
+    description: Login request
+    properties:
+      password:
+        example: secure123
+        type: string
+      username:
+        example: john_doe
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  model.RegisterRequest:
+    description: User registration request
+    properties:
+      email:
+        example: john@example.com
+        type: string
+      full_name:
+        example: John Doe
+        type: string
+      password:
+        example: secure123
+        type: string
+      role:
+        enum:
+        - admin
+        - employee
+        example: employee
+        type: string
+      username:
+        example: john_doe
+        type: string
+    required:
+    - email
+    - full_name
+    - password
+    - role
+    - username
+    type: object
+  model.UpdateUserRequest:
+    description: User update request
+    properties:
+      email:
+        example: john.updated@example.com
+        type: string
+      full_name:
+        example: John Doe Updated
+        type: string
+      role:
+        enum:
+        - admin
+        - employee
+        example: employee
+        type: string
+      username:
+        example: john_doe
+        type: string
+    required:
+    - email
+    - full_name
+    - role
+    - username
+    type: object
   model.User:
     properties:
       created_at:
@@ -41,6 +106,14 @@ definitions:
         type: string
       username:
         type: string
+    type: object
+  response.Response:
+    properties:
+      data: {}
+      message:
+        type: string
+      status:
+        type: boolean
     type: object
 host: localhost:8080
 info:
@@ -165,38 +238,34 @@ paths:
     post:
       consumes:
       - application/json
-      description: Authenticate a user and return user details
+      description: Authenticate user and return token
       parameters:
       - description: Login credentials
         in: body
-        name: credentials
+        name: user
         required: true
         schema:
-          properties:
-            password:
-              type: string
-            username:
-              type: string
-          type: object
+          $ref: '#/definitions/model.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: User details
+          description: Login successful
           schema:
-            $ref: '#/definitions/model.User'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.User'
+              type: object
         "400":
           description: Invalid input
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.Response'
         "401":
           description: Invalid credentials
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.Response'
       summary: Login user
       tags:
       - users
@@ -211,28 +280,27 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/model.User'
+          $ref: '#/definitions/model.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
           description: User registered successfully
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.User'
+              type: object
         "400":
           description: Invalid input
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.Response'
         "500":
           description: Server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.Response'
       summary: Register a new user
       tags:
       - users
@@ -253,21 +321,19 @@ paths:
         "200":
           description: User deleted successfully
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.Response'
         "400":
           description: Invalid user ID
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.Response'
         "500":
           description: Server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Delete user
@@ -287,21 +353,22 @@ paths:
       - application/json
       responses:
         "200":
-          description: User details
+          description: User details retrieved successfully
           schema:
-            $ref: '#/definitions/model.User'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.User'
+              type: object
         "400":
           description: Invalid user ID
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.Response'
         "404":
           description: User not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Get user by ID
@@ -317,33 +384,36 @@ paths:
         name: id
         required: true
         type: integer
-      - description: User details to update
+      - description: User details
         in: body
         name: user
         required: true
         schema:
-          $ref: '#/definitions/model.User'
+          $ref: '#/definitions/model.UpdateUserRequest'
       produces:
       - application/json
       responses:
         "200":
           description: User updated successfully
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.User'
+              type: object
         "400":
           description: Invalid input
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.Response'
         "500":
           description: Server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: Update user
